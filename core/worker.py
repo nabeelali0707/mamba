@@ -25,6 +25,9 @@ class FetchThread(QThread):
         try:
             first = self.store.count() == 0
             items = fetch_all(load_labs())
+            if not items:
+                self.failed.emit("no items (offline?)")
+                return
             new: list[NewsItem] = self.store.add_many(items)
             log.info("fetched %d items, %d new", len(items), len(new))
             self.done.emit(new, first)

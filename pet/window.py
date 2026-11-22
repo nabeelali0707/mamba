@@ -11,6 +11,7 @@ from PySide6.QtGui import QAction, QIcon
 from PySide6.QtWidgets import (QApplication, QHBoxLayout, QMenu, QSystemTrayIcon,
                                QVBoxLayout, QWidget)
 
+from core import autostart
 from core.db import Store
 from core.feed import Feed
 from core.models import CATEGORIES
@@ -198,8 +199,12 @@ class PetWindow(QWidget):
             return
         self._fetcher = FetchThread(self.store, self)
         self._fetcher.done.connect(self._on_fetched)
-        self._fetcher.failed.connect(lambda msg: self.tray.showMessage("Mamba", f"Fetch failed: {msg}"))
+        self._fetcher.failed.connect(self._on_fetch_failed)
         self._fetcher.start()
+
+    def _on_fetch_failed(self, _msg: str) -> None:
+        """Typically no network yet right after boot: quietly retry in a minute."""
+        QTimer.singleShot(60_000, self.refresh)
 
     def _on_fetched(self, new: list, first_run: bool) -> None:
         self.feed.reload()
@@ -232,6 +237,8 @@ class PetWindow(QWidget):
         roam = m.addAction("Roam around screen"); roam.setCheckable(True); roam.setChecked(self.roam)
         roam.toggled.connect(self.set_roam)
         m.addAction("Fetch news now", self.refresh)
+        st = m.addAction("Start with Windows"); st.setCheckable(True); st.setChecked(autostart.is_enabled())
+        st.toggled.connect(lambda on: autostart.enable() if on else autostart.disable())
         fm = m.addMenu("Filter")
         fm.addAction("All", lambda: self._menu_filter(None))
         for cat, (emo, _) in CATEGORIES.items():
