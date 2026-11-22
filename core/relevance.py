@@ -128,7 +128,10 @@ def keep(it: NewsItem, strict_labs: frozenset[str] = frozenset()) -> bool:
             return bool(STRICT.search(title + " " + it.summary))
         return True
     # third-party news: trusted publisher, technical, and not business/politics/consumer fluff
-    return bool(TRUSTED.search(publisher(it))) and bool(TECH.search(title))         and not BLOCK.search(title)
+    if len(title.split()) < 4:                        # section headers like "Research Reports"
+        return False
+    return (bool(TRUSTED.search(publisher(it))) and bool(TECH.search(title))
+            and not BLOCK.search(title))
 
 
 def boost(it: NewsItem) -> float:
