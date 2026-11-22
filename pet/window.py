@@ -19,7 +19,6 @@ from .bull import BullWidget
 
 FETCH_EVERY_MS = 15 * 60 * 1000
 AUTO_EVERY_MS = 12 * 1000
-PEEK_MS = 15 * 1000
 
 
 class PetWindow(QWidget):
@@ -62,8 +61,8 @@ class PetWindow(QWidget):
         self.bubble.filter_changed.connect(self.set_filter)
         self.bubble.auto_toggled.connect(self.set_auto)
 
-        self.hide_timer = QTimer(self); self.hide_timer.setSingleShot(True)
-        self.hide_timer.timeout.connect(self._maybe_hide)
+        self.top_timer = QTimer(self); self.top_timer.timeout.connect(self._stay_on_top)
+        self.top_timer.start(3000)
         self.auto_timer = QTimer(self); self.auto_timer.timeout.connect(self._auto_step)
         self.auto_timer.start(AUTO_EVERY_MS)
         self.fetch_timer = QTimer(self); self.fetch_timer.timeout.connect(self.refresh)
@@ -97,6 +96,11 @@ class PetWindow(QWidget):
         self.move(bull_screen_x - margin, bottom - self.height() + 1)
         self._clamp()
 
+    def _stay_on_top(self) -> None:
+        """Re-assert topmost so other windows can't bury the bull."""
+        if self.isVisible():
+            self.raise_()
+
     def _clamp(self) -> None:
         scr = QApplication.screenAt(self.geometry().center()) or QApplication.primaryScreen()
         g = scr.availableGeometry()
@@ -112,7 +116,6 @@ class PetWindow(QWidget):
     def step(self, d: int) -> None:
         if not self.bubble.isVisible():
             self.set_bubble_visible(True)
-        self.hide_timer.start(PEEK_MS * 2)      # keep it open while browsing
         self.new_count = 0
         (self.feed.next if d > 0 else self.feed.prev)()
         self.render_current()
@@ -135,19 +138,11 @@ class PetWindow(QWidget):
             webbrowser.open(self.feed.current.url)
 
     def toggle_bubble(self) -> None:
-        self.hide_timer.stop()                  # user is in control now
         self.set_bubble_visible(not self.bubble.isVisible())
 
     def _peek(self) -> None:
-        """Pop the bubble up briefly, then tuck it away so only the small bull floats."""
+        """Make sure the bubble is showing (it stays until the user closes it)."""
         self.set_bubble_visible(True)
-        self.hide_timer.start(PEEK_MS)
-
-    def _maybe_hide(self) -> None:
-        if self.bubble.underMouse():
-            self.hide_timer.start(PEEK_MS)      # still reading: wait
-        else:
-            self.set_bubble_visible(False)
 
     def set_bubble_visible(self, on: bool) -> None:
         self.bubble.setVisible(on)
