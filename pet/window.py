@@ -19,6 +19,7 @@ from .bull import BullWidget
 
 FETCH_EVERY_MS = 15 * 60 * 1000
 AUTO_EVERY_MS = 12 * 1000
+PEEK_MS = 15 * 1000
 
 
 class PetWindow(QWidget):
@@ -41,7 +42,9 @@ class PetWindow(QWidget):
         lay.addWidget(self.bubble)
         # keep the bull centred under the bubble's tail
         row = QHBoxLayout()
-        row.setContentsMargins(self.bubble.TAIL_X - self.bull.W // 2, 0, 0, 0)
+        self._row = row
+        self._bull_margin = self.bubble.TAIL_X - self.bull.width() // 2
+        row.setContentsMargins(self._bull_margin, 0, 0, 0)
         row.addWidget(self.bull); row.addStretch(1)
         lay.addLayout(row)
         lay.setContentsMargins(0, 0, 0, 0)
@@ -59,6 +62,8 @@ class PetWindow(QWidget):
         self.bubble.filter_changed.connect(self.set_filter)
         self.bubble.auto_toggled.connect(self.set_auto)
 
+        self.hide_timer = QTimer(self); self.hide_timer.setSingleShot(True)
+        self.hide_timer.timeout.connect(self._maybe_hide)
         self.auto_timer = QTimer(self); self.auto_timer.timeout.connect(self._auto_step)
         self.auto_timer.start(AUTO_EVERY_MS)
         self.fetch_timer = QTimer(self); self.fetch_timer.timeout.connect(self.refresh)
@@ -69,6 +74,7 @@ class PetWindow(QWidget):
         self._build_tray()
         self.render_current()
         self._place_initial()
+        self._peek()
         QTimer.singleShot(500, self.refresh)
 
     # ---------- layout helpers ----------
@@ -80,8 +86,15 @@ class PetWindow(QWidget):
     def _relayout(self) -> None:
         """Resize to fit content while keeping the bull in place; clamp on screen."""
         bottom = self.geometry().bottom()
+        bull_screen_x = self.x() + self._row.contentsMargins().left()
+        if self.bubble.isVisible():
+            margin, width = self._bull_margin, self.bubble.WIDTH
+        else:                                   # just the bull: shrink the window to fit it
+            margin, width = 0, self.bull.width()
+        self._row.setContentsMargins(margin, 0, 0, 0)
+        self.setFixedWidth(width)
         self.adjustSize()
-        self.move(self.x(), bottom - self.height() + 1)
+        self.move(bull_screen_x - margin, bottom - self.height() + 1)
         self._clamp()
 
     def _clamp(self) -> None:
@@ -99,6 +112,7 @@ class PetWindow(QWidget):
     def step(self, d: int) -> None:
         if not self.bubble.isVisible():
             self.set_bubble_visible(True)
+        self.hide_timer.start(PEEK_MS * 2)      # keep it open while browsing
         self.new_count = 0
         (self.feed.next if d > 0 else self.feed.prev)()
         self.render_current()
@@ -121,7 +135,19 @@ class PetWindow(QWidget):
             webbrowser.open(self.feed.current.url)
 
     def toggle_bubble(self) -> None:
+        self.hide_timer.stop()                  # user is in control now
         self.set_bubble_visible(not self.bubble.isVisible())
+
+    def _peek(self) -> None:
+        """Pop the bubble up briefly, then tuck it away so only the small bull floats."""
+        self.set_bubble_visible(True)
+        self.hide_timer.start(PEEK_MS)
+
+    def _maybe_hide(self) -> None:
+        if self.bubble.underMouse():
+            self.hide_timer.start(PEEK_MS)      # still reading: wait
+        else:
+            self.set_bubble_visible(False)
 
     def set_bubble_visible(self, on: bool) -> None:
         self.bubble.setVisible(on)
@@ -142,11 +168,11 @@ class PetWindow(QWidget):
             self.new_count = len(new)
             best = max(new, key=lambda i: (i.priority, i.score, i.published))
             self.feed.goto(best.id)
-            self.set_bubble_visible(True)
+            self._peek()
             self.bull.alert(big=best.priority >= 3)
         elif first_run:
             self.bull.alert()
-            self.set_bubble_visible(True)
+            self._peek()
         self.render_current()
 
     # ---------- mood / tray / menu ----------

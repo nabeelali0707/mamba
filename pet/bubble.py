@@ -21,13 +21,13 @@ LABELS = {"model": "NEW MODEL", "product": "PRODUCT", "research": "RESEARCH", "p
 STYLE = """
 QLabel#tag { font-size: 11px; font-weight: 700; letter-spacing: 1px; }
 QLabel#count { color: #8890a0; font-size: 11px; }
-QLabel#title { color: #f4f5f8; font-size: 15px; font-weight: 700; }
-QLabel#summary { color: #aab0bd; font-size: 12px; }
+QLabel#title { color: #f4f5f8; font-size: 13px; font-weight: 700; }
+QLabel#summary { color: #aab0bd; font-size: 11px; }
 QLabel#meta { color: #7d8595; font-size: 11px; }
 QPushButton { background: rgba(255,255,255,0.08); color: #e6e8ee; border: none;
-              border-radius: 8px; padding: 5px 11px; font-size: 13px; }
+              border-radius: 8px; padding: 4px 8px; font-size: 12px; }
 QPushButton:hover { background: rgba(255,255,255,0.18); }
-QPushButton#chip { padding: 2px 6px; font-size: 12px; border-radius: 9px; }
+QPushButton#chip { padding: 1px 4px; font-size: 11px; border-radius: 9px; }
 QPushButton#chip:checked { background: rgba(255,255,255,0.28); }
 QPushButton#auto:checked { background: #2f7d4f; }
 QPushButton#open { background: #3b6df0; font-weight: 600; }
@@ -53,8 +53,8 @@ class ClickLabel(QLabel):
 
 
 class Bubble(QWidget):
-    WIDTH = 380
-    TAIL_X = 295
+    WIDTH = 300
+    TAIL_X = 242
 
     next_clicked = Signal()
     prev_clicked = Signal()
@@ -69,7 +69,7 @@ class Bubble(QWidget):
         self.setFixedWidth(self.WIDTH)
         self.setStyleSheet(STYLE)
         root = QVBoxLayout(self)
-        root.setContentsMargins(16, 12, 16, 12 + TAIL_H)
+        root.setContentsMargins(12, 9, 12, 9 + TAIL_H)
         root.setSpacing(6)
 
         head = QHBoxLayout()
@@ -90,7 +90,7 @@ class Bubble(QWidget):
         self.meta = QLabel(); self.meta.setObjectName("meta"); root.addWidget(self.meta)
 
         # category chips
-        chips = QHBoxLayout(); chips.setSpacing(3)
+        chips = QHBoxLayout(); chips.setSpacing(2)
         self.group = QButtonGroup(self); self.group.setExclusive(True)
         self._chip_cat: dict[int, str | None] = {}
         for n, (cat, label) in enumerate([(None, "All")] + [(c, v[0]) for c, v in CATEGORIES.items()]):
@@ -107,12 +107,12 @@ class Bubble(QWidget):
         # controls
         row = QHBoxLayout()
         prev = QPushButton("◀"); prev.setToolTip("Previous"); prev.clicked.connect(self.prev_clicked)
-        nxt = QPushButton("Next ▶"); nxt.setToolTip("Next story (or scroll wheel)"); nxt.clicked.connect(self.next_clicked)
-        self.auto = QPushButton("⟳ Auto"); self.auto.setObjectName("auto"); self.auto.setCheckable(True)
+        nxt = QPushButton("▶"); nxt.setToolTip("Next story (or scroll wheel)"); nxt.clicked.connect(self.next_clicked)
+        self.auto = QPushButton("Auto"); self.auto.setObjectName("auto"); self.auto.setCheckable(True)
         self.auto.setChecked(True); self.auto.setToolTip("Rotate stories automatically")
         self.auto.toggled.connect(self.auto_toggled)
         refresh = QPushButton("↻"); refresh.setToolTip("Fetch fresh news now"); refresh.clicked.connect(self.refresh_clicked)
-        op = QPushButton("Open 🔗"); op.setObjectName("open"); op.clicked.connect(self.open_clicked)
+        op = QPushButton("Open"); op.setObjectName("open"); op.clicked.connect(self.open_clicked)
         for w in (prev, nxt, self.auto, refresh):
             row.addWidget(w)
         row.addStretch(1); row.addWidget(op)
