@@ -24,30 +24,29 @@ labs:
   - name: Meta AI
     rss: []
     hf: ["facebook", "meta-llama"]
-    github: ["facebookresearch", "meta-llama"]
     news: "Meta AI Llama"
   - name: xAI
     hf: ["xai-org"]
     github: ["xai-org"]
     news: "xAI Grok"
   - name: Microsoft AI
+    strict: true     # mixed-topic blog: only ML-specific posts
     rss: ["https://www.microsoft.com/en-us/research/feed/"]
     hf: ["microsoft"]
-    github: ["microsoft"]
     news: "Microsoft AI research"
   - name: Amazon AI
+    strict: true     # mixed-topic blog: only ML-specific posts
     rss: ["https://www.amazon.science/index.rss"]
     hf: ["amazon"]
     news: "Amazon Nova AI"
   - name: Apple ML
     rss: ["https://machinelearning.apple.com/rss.xml"]
     hf: ["apple"]
-    github: ["apple"]
     news: "Apple machine learning"
   - name: NVIDIA Research
+    strict: true     # mixed-topic blog: only ML-specific posts
     rss: ["https://developer.nvidia.com/blog/feed/"]
     hf: ["nvidia"]
-    github: ["NVIDIA"]
     news: "NVIDIA AI"
 
   # ---- Open-weight / model companies ----
@@ -114,15 +113,12 @@ labs:
     news: "01.AI Yi"
   - name: ByteDance Seed
     hf: ["ByteDance-Seed", "ByteDance"]
-    github: ["bytedance"]
     news: "ByteDance Seed AI"
   - name: Tencent Hunyuan
     hf: ["tencent"]
-    github: ["Tencent-Hunyuan", "Tencent"]
     news: "Tencent Hunyuan"
   - name: Baidu ERNIE
     hf: ["baidu"]
-    github: ["PaddlePaddle"]
     news: "Baidu ERNIE"
 
   # ---- New / specialized labs ----
@@ -159,16 +155,13 @@ labs:
     news: "Cerebras AI"
   - name: LangChain
     rss: ["https://blog.langchain.dev/rss/"]
-    github: ["langchain-ai"]
     news: "LangChain"
   - name: LlamaIndex
-    github: ["run-llama"]
     news: "LlamaIndex"
 
 # ---- General sources ----
 general:
   rss:
-    - {name: "The Verge AI", url: "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml", category: news}
     - {name: "TechCrunch AI", url: "https://techcrunch.com/category/artificial-intelligence/feed/", category: news}
     - {name: "VentureBeat AI", url: "https://venturebeat.com/category/ai/feed/", category: news}
     - {name: "MIT Tech Review AI", url: "https://www.technologyreview.com/topic/artificial-intelligence/feed", category: news}

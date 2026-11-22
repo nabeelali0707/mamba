@@ -15,6 +15,7 @@ import feedparser
 import httpx
 
 from core.models import NewsItem
+from core.relevance import GOOD_TASKS, good_model_name, keep
 
 log = logging.getLogger("mamba.fetch")
 HEADERS = {"User-Agent": "mamba-ai-news-pet/0.1 (personal desktop app)"}
@@ -78,6 +79,18 @@ def fetch_arxiv(categories: list[str], per_cat: int = 15) -> list[NewsItem]:
     return out
 
 
+def fetch_arxiv_learning(per_query: int = 20) -> list[NewsItem]:
+    """arXiv papers you can learn from: surveys, tutorials, primers and lab technical reports."""
+    q = ('(ti:survey OR ti:tutorial OR ti:primer OR ti:"technical report" OR ti:"a review") '
+         'AND (cat:cs.LG OR cat:cs.AI OR cat:cs.CL OR cat:cs.CV)')
+    url = ("https://export.arxiv.org/api/query?search_query=" + quote_plus(q) +
+           f"&sortBy=submittedDate&sortOrder=descending&max_results={per_query}")
+    items = _parse_feed(url, "arXiv survey/report", "paper", limit=per_query)
+    for it in items:
+        it.score = 12                      # bump: curated by title pattern, not random firehose
+    return items
+
+
 def fetch_hf_papers() -> list[NewsItem]:
     """Hugging Face Daily Papers (community-curated trending papers)."""
     try:
@@ -108,7 +121,7 @@ def fetch_hf_papers() -> list[NewsItem]:
 
 def fetch_hn() -> list[NewsItem]:
     """Hacker News front page filtered for AI via the Algolia API."""
-    url = ("https://hn.algolia.com/api/v1/search?tags=story&numericFilters=points>80"
+    url = ("https://hn.algolia.com/api/v1/search?tags=story&numericFilters=points>100"
            "&query=AI%20OR%20LLM%20OR%20GPT%20OR%20Claude%20OR%20machine%20learning&hitsPerPage=25")
     try:
         with _client() as c:
@@ -150,6 +163,8 @@ def fetch_hf_org(org: str, lab: str, limit: int = 3, max_age_days: int = 10) -> 
         except Exception:  # noqa: BLE001
             ts = time.time()
         if time.time() - ts > max_age_days * 86400:
+            continue
+        if not good_model_name(mid) or (m.get("pipeline_tag") or "") not in GOOD_TASKS:
             continue
         out.append(NewsItem(
             title=f"{lab} released model: {mid}", url=f"https://huggingface.co/{mid}",
@@ -193,9 +208,16 @@ def fetch_github_org(org: str, lab: str, limit: int = 5) -> list[NewsItem]:
 
 
 def fetch_google_news(query: str, lab: str, limit: int = 6) -> list[NewsItem]:
-    url = (f"https://news.google.com/rss/search?q={quote_plus(query)}+when:2d"
+    q = f"{query} (model OR research OR paper OR release OR weights OR open-source)"
+    url = (f"https://news.google.com/rss/search?q={quote_plus(q)}+when:3d"
            "&hl=en-US&gl=US&ceid=US:en")
-    items = _parse_feed(url, f"News · {lab}", "news", lab=lab, limit=limit)
+    items = _parse_feed(url, "news", "news", lab=lab, limit=limit)
+    for it in items:                       # "Headline - Publisher" -> headline, publisher
+        head, sep, pub = it.title.rpartition(" - ")
+        if sep and head:
+            it.title, it.source = head, f"{pub} (news)"
+        else:
+            it.source = f"{lab} (news)"
     return items
 
 
@@ -203,9 +225,7 @@ def classify(item: NewsItem) -> NewsItem:
     """Cheap keyword classifier to upgrade 'news' items to product / funding / model."""
     t = item.title.lower()
     if item.category in ("news", "research"):
-        if re.search(r"\b(raises|funding|series [a-e]|valuation|acquires|acquisition)\b", t):
-            item.category = "funding"
-        elif re.search(r"\b(launch|introduc|release|unveil|announc|rolls out|debut|new model)\w*", t):
+        if re.search(r"\b(launch|introduc|release|unveil|announc|rolls out|debut|new model)\w*", t):
             item.category = "product"
     return item
 
@@ -215,9 +235,8 @@ def fetch_all(cfg: dict) -> list[NewsItem]:
     jobs = []
     gen = cfg.get("general", {})
     for f in gen.get("rss", []):
-        jobs.append(lambda f=f: _parse_feed(f["url"], f["name"], f.get("category", "news"),
-                                            ai_only=f["name"].startswith(("The Verge", "MIT"))))
-    jobs.append(lambda: fetch_arxiv(gen.get("arxiv_categories", ["cs.AI"])))
+        jobs.append(lambda f=f: _parse_feed(f["url"], f["name"], f.get("category", "news")))
+    jobs.append(fetch_arxiv_learning)
     jobs.append(fetch_hf_papers)
     jobs.append(fetch_hn)
 
@@ -248,4 +267,8 @@ def fetch_all(cfg: dict) -> list[NewsItem]:
         log.warning("deadline hit; abandoning %d slow jobs", stuck)
     finally:
         pool.shutdown(wait=False, cancel_futures=True)
-    return [classify(i) for i in results]
+    strict = frozenset(l["name"] for l in cfg.get("labs", []) if l.get("strict"))
+    kept = [classify(i) for i in results]
+    kept = [i for i in kept if keep(i, strict)]
+    log.info("relevance filter: kept %d of %d", len(kept), len(results))
+    return kept

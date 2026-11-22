@@ -3,8 +3,10 @@ from __future__ import annotations
 
 import time
 
+from .config import load_labs
 from .db import Store
 from .models import NewsItem
+from .relevance import boost, drop_near_duplicates, keep
 
 MAX_AGE_DAYS = 14
 
@@ -13,7 +15,7 @@ def rank(it: NewsItem, now: float | None = None) -> float:
     """Higher = shown earlier. Mixes category priority, freshness and popularity."""
     now = now or time.time()
     age_h = max(0.0, (now - it.published) / 3600)
-    return it.priority * 8 - age_h * 0.5 + min(it.score, 300) / 30
+    return it.priority * 8 - age_h * 0.5 + min(it.score, 300) / 30 + boost(it)
 
 
 def diversify(pool: list[NewsItem], now: float) -> list[NewsItem]:
@@ -43,8 +45,11 @@ class Feed:
     def reload(self, keep_id: str | None = None) -> None:
         now = time.time()
         cutoff = now - MAX_AGE_DAYS * 86400
-        pool = [i for i in self.store.latest(400, category=self.category) if i.published >= cutoff]
-        self.items = diversify(pool, now)
+        strict = frozenset(l["name"] for l in load_labs().get("labs", []) if l.get("strict"))
+        pool = [i for i in self.store.latest(600, category=self.category)
+                if i.published >= cutoff and keep(i, strict)]
+        pool.sort(key=lambda i: rank(i, now), reverse=True)
+        self.items = diversify(drop_near_duplicates(pool), now)
         self.index = 0
         if keep_id:
             self.goto(keep_id)
