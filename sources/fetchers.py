@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import re
 import time
 from calendar import timegm
@@ -157,11 +158,22 @@ def fetch_hf_org(org: str, lab: str, limit: int = 3, max_age_days: int = 10) -> 
     return out
 
 
+_gh_last: dict[str, float] = {}
+GH_MIN_INTERVAL = 3600   # anonymous API allows only 60 req/hour; set GITHUB_TOKEN to lift this
+
+
 def fetch_github_org(org: str, lab: str, limit: int = 5) -> list[NewsItem]:
+    interval = 300 if os.environ.get("GITHUB_TOKEN") else GH_MIN_INTERVAL
+    if time.time() - _gh_last.get(org, 0) < interval:
+        return []
+    _gh_last[org] = time.time()
     url = f"https://api.github.com/orgs/{org}/repos?sort=created&direction=desc&per_page={limit}"
     try:
         with _client() as c:
-            r = c.get(url, headers={**HEADERS, "Accept": "application/vnd.github+json"})
+            hdr = {**HEADERS, "Accept": "application/vnd.github+json"}
+            if os.environ.get("GITHUB_TOKEN"):
+                hdr["Authorization"] = f"Bearer {os.environ['GITHUB_TOKEN']}"
+            r = c.get(url, headers=hdr)
             r.raise_for_status()
             repos = r.json()
     except Exception as ex:  # noqa: BLE001
