@@ -1,0 +1,175 @@
+# Registry of AI labs / companies to track.
+#   rss:      feed URLs (verified at runtime; broken ones are skipped and logged)
+#   hf:       Hugging Face org names (new models appear here first)
+#   github:   GitHub org names (new repos / releases)
+#   news:     Google News search term (universal fallback)
+# Set `enabled: false` to mute a lab.
+
+labs:
+  # ---- Frontier labs ----
+  - name: OpenAI
+    rss: ["https://openai.com/news/rss.xml"]
+    hf: ["openai"]
+    github: ["openai"]
+    news: "OpenAI"
+  - name: Anthropic
+    rss: []
+    github: ["anthropics"]
+    news: "Anthropic Claude"
+  - name: Google DeepMind
+    rss: ["https://deepmind.google/blog/rss.xml"]
+    hf: ["google"]
+    github: ["google-deepmind"]
+    news: "Google DeepMind"
+  - name: Meta AI
+    rss: []
+    hf: ["facebook", "meta-llama"]
+    github: ["facebookresearch", "meta-llama"]
+    news: "Meta AI Llama"
+  - name: xAI
+    hf: ["xai-org"]
+    github: ["xai-org"]
+    news: "xAI Grok"
+  - name: Microsoft AI
+    rss: ["https://www.microsoft.com/en-us/research/feed/"]
+    hf: ["microsoft"]
+    github: ["microsoft"]
+    news: "Microsoft AI research"
+  - name: Amazon AI
+    rss: ["https://www.amazon.science/index.rss"]
+    hf: ["amazon"]
+    news: "Amazon Nova AI"
+  - name: Apple ML
+    rss: ["https://machinelearning.apple.com/rss.xml"]
+    hf: ["apple"]
+    github: ["apple"]
+    news: "Apple machine learning"
+  - name: NVIDIA Research
+    rss: ["https://developer.nvidia.com/blog/feed/"]
+    hf: ["nvidia"]
+    github: ["NVIDIA"]
+    news: "NVIDIA AI"
+
+  # ---- Open-weight / model companies ----
+  - name: Mistral AI
+    hf: ["mistralai"]
+    github: ["mistralai"]
+    news: "Mistral AI"
+  - name: Hugging Face
+    rss: ["https://huggingface.co/blog/feed.xml"]
+    github: ["huggingface"]
+    news: "Hugging Face"
+  - name: Cohere
+    hf: ["CohereLabs"]
+    github: ["cohere-ai"]
+    news: "Cohere AI"
+  - name: AI21 Labs
+    hf: ["ai21labs"]
+    news: "AI21 Labs"
+  - name: Ai2
+    rss: ["https://allenai.org/rss.xml"]
+    hf: ["allenai"]
+    github: ["allenai"]
+    news: "Allen Institute for AI Ai2"
+  - name: EleutherAI
+    hf: ["EleutherAI"]
+    github: ["EleutherAI"]
+    news: "EleutherAI"
+  - name: Stability AI
+    hf: ["stabilityai"]
+    github: ["Stability-AI"]
+    news: "Stability AI"
+  - name: Nous Research
+    hf: ["NousResearch"]
+    github: ["NousResearch"]
+    news: "Nous Research"
+  - name: Reka
+    hf: ["RekaAI"]
+    news: "Reka AI"
+
+  # ---- Chinese labs ----
+  - name: DeepSeek
+    hf: ["deepseek-ai"]
+    github: ["deepseek-ai"]
+    news: "DeepSeek"
+  - name: Alibaba Qwen
+    hf: ["Qwen"]
+    github: ["QwenLM"]
+    news: "Alibaba Qwen"
+  - name: Moonshot AI
+    hf: ["moonshotai"]
+    github: ["MoonshotAI"]
+    news: "Moonshot AI Kimi"
+  - name: Zhipu AI
+    hf: ["zai-org", "THUDM"]
+    github: ["zai-org", "THUDM"]
+    news: "Zhipu AI GLM"
+  - name: MiniMax
+    hf: ["MiniMaxAI"]
+    github: ["MiniMax-AI"]
+    news: "MiniMax AI"
+  - name: 01.AI
+    hf: ["01-ai"]
+    github: ["01-ai"]
+    news: "01.AI Yi"
+  - name: ByteDance Seed
+    hf: ["ByteDance-Seed", "ByteDance"]
+    github: ["bytedance"]
+    news: "ByteDance Seed AI"
+  - name: Tencent Hunyuan
+    hf: ["tencent"]
+    github: ["Tencent-Hunyuan", "Tencent"]
+    news: "Tencent Hunyuan"
+  - name: Baidu ERNIE
+    hf: ["baidu"]
+    github: ["PaddlePaddle"]
+    news: "Baidu ERNIE"
+
+  # ---- New / specialized labs ----
+  - name: Safe Superintelligence
+    news: "Safe Superintelligence SSI Sutskever"
+  - name: Thinking Machines Lab
+    news: "Thinking Machines Lab Murati"
+  - name: Perplexity
+    news: "Perplexity AI"
+  - name: Character.AI
+    news: "Character.AI"
+  - name: Runway
+    news: "Runway AI video"
+  - name: Black Forest Labs
+    hf: ["black-forest-labs"]
+    news: "Black Forest Labs FLUX"
+  - name: Midjourney
+    news: "Midjourney"
+  - name: ElevenLabs
+    news: "ElevenLabs"
+  - name: Physical Intelligence
+    github: ["Physical-Intelligence"]
+    news: "Physical Intelligence robotics"
+  - name: Figure AI
+    news: "Figure AI humanoid"
+
+  # ---- Infra / tooling ----
+  - name: Together AI
+    hf: ["togethercomputer"]
+    news: "Together AI"
+  - name: Groq
+    news: "Groq inference"
+  - name: Cerebras
+    news: "Cerebras AI"
+  - name: LangChain
+    rss: ["https://blog.langchain.dev/rss/"]
+    github: ["langchain-ai"]
+    news: "LangChain"
+  - name: LlamaIndex
+    github: ["run-llama"]
+    news: "LlamaIndex"
+
+# ---- General sources ----
+general:
+  rss:
+    - {name: "The Verge AI", url: "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml", category: news}
+    - {name: "TechCrunch AI", url: "https://techcrunch.com/category/artificial-intelligence/feed/", category: news}
+    - {name: "VentureBeat AI", url: "https://venturebeat.com/category/ai/feed/", category: news}
+    - {name: "MIT Tech Review AI", url: "https://www.technologyreview.com/topic/artificial-intelligence/feed", category: news}
+  arxiv_categories: ["cs.AI", "cs.LG", "cs.CL", "cs.CV"]
