@@ -39,7 +39,7 @@ class BullWidget(QWidget):
     context = Signal(object)     # global QPoint
 
     W, H = 170, 160          # design coordinates (what _draw uses)
-    SCALE = 0.58             # on-screen size = design * SCALE
+    SCALE = 0.40             # on-screen size = design * SCALE
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
@@ -59,6 +59,10 @@ class BullWidget(QWidget):
         self._timer.start(33)
 
     # ---- public ----
+    @property
+    def dragging(self) -> bool:
+        return self._press_pos is not None
+
     def alert(self, big: bool = False) -> None:
         """Hop (and shake horns if it's big news)."""
         now = self._now()

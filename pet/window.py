@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import datetime
+import random
+import time
 import webbrowser
 
 from PySide6.QtCore import QPoint, QTimer, Qt
@@ -19,6 +21,8 @@ from .bull import BullWidget
 
 FETCH_EVERY_MS = 15 * 60 * 1000
 AUTO_EVERY_MS = 12 * 1000
+ROAM_SPEED = 40.0          # px per second: a slow, lazy drift
+ROAM_TICK_MS = 33
 
 
 class PetWindow(QWidget):
@@ -61,6 +65,12 @@ class PetWindow(QWidget):
         self.bubble.filter_changed.connect(self.set_filter)
         self.bubble.auto_toggled.connect(self.set_auto)
 
+        self.roam = True
+        self._fx = self._fy = 0.0
+        self._target: tuple[float, float] | None = None
+        self._rest_until = time.time() + 6
+        self.roam_timer = QTimer(self); self.roam_timer.timeout.connect(self._roam_tick)
+        self.roam_timer.start(ROAM_TICK_MS)
         self.top_timer = QTimer(self); self.top_timer.timeout.connect(self._stay_on_top)
         self.top_timer.start(3000)
         self.auto_timer = QTimer(self); self.auto_timer.timeout.connect(self._auto_step)
@@ -95,6 +105,40 @@ class PetWindow(QWidget):
         self.adjustSize()
         self.move(bull_screen_x - margin, bottom - self.height() + 1)
         self._clamp()
+
+    # ---------- roaming ----------
+    def set_roam(self, on: bool) -> None:
+        self.roam = on
+
+    def _roam_tick(self) -> None:
+        now = time.time()
+        busy = self.bull.dragging or self.underMouse()
+        if busy:                                    # user is interacting: stand still
+            self._target = None
+            self._rest_until = now + 8
+            return
+        if not self.roam or now < self._rest_until:
+            return
+        cur = self.pos()
+        if abs(cur.x() - round(self._fx)) > 1 or abs(cur.y() - round(self._fy)) > 1:
+            self._fx, self._fy = float(cur.x()), float(cur.y())   # moved by drag / relayout
+        if self._target is None:
+            scr = QApplication.screenAt(self.geometry().center()) or QApplication.primaryScreen()
+            g = scr.availableGeometry()
+            self._target = (random.uniform(g.left(), max(g.left(), g.right() - self.width())),
+                            random.uniform(g.top(), max(g.top(), g.bottom() - self.height())))
+        tx, ty = self._target
+        dx, dy = tx - self._fx, ty - self._fy
+        dist = (dx * dx + dy * dy) ** 0.5
+        step = ROAM_SPEED * ROAM_TICK_MS / 1000
+        if dist <= step:                            # arrived: rest, then pick a new spot
+            self._fx, self._fy = tx, ty
+            self._target = None
+            self._rest_until = now + random.uniform(4, 10)
+        else:
+            self._fx += dx / dist * step
+            self._fy += dy / dist * step
+        self.move(round(self._fx), round(self._fy))
 
     def _stay_on_top(self) -> None:
         """Re-assert topmost so other windows can't bury the bull."""
@@ -185,6 +229,8 @@ class PetWindow(QWidget):
     def _make_menu(self) -> QMenu:
         m = QMenu()
         m.addAction("Show / hide news bubble", self.toggle_bubble)
+        roam = m.addAction("Roam around screen"); roam.setCheckable(True); roam.setChecked(self.roam)
+        roam.toggled.connect(self.set_roam)
         m.addAction("Fetch news now", self.refresh)
         fm = m.addMenu("Filter")
         fm.addAction("All", lambda: self._menu_filter(None))
